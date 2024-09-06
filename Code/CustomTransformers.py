@@ -6,7 +6,7 @@ import numpy as np
 class ColOutlierRemover(BaseEstimator, TransformerMixin):
     def __init__(self, percent=1.5, strategy="remove", columns=[]):
         super().__init__()
-        self.percent = 1.5
+        self.percent = percent
         self.columns = columns
         self.strategy = strategy
         self.Qs = {}
@@ -29,8 +29,8 @@ class ColOutlierRemover(BaseEstimator, TransformerMixin):
                 Xc.loc[(Xc[c] < lower_limit), c] = lower_limit
                 Xc.loc[(Xc[c] > upper_limit), c] = upper_limit
             elif self.strategy=="mean":
-                raise Exception("Strategy not implemented")
+                raise Exception("Strategy not implemented yet")
             else:
-                raise Exception("Strategy not implemented")
+                raise Exception("Strategy not implemented yet")
             
         return Xc
