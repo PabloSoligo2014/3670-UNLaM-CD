@@ -1,1 +1,2 @@
 *.pyc
+datasets/loan_data.csv.gz
