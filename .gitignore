@@ -1,2 +1,4 @@
 *.pyc
 datasets/loan_data.csv.gz
+Code/FeatureSelection.py
+05_Others/02_Ej_knn_&_evaluacion_de_modelos_smokers.ipynb
