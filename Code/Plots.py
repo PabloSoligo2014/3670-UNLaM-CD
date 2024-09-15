@@ -4,6 +4,9 @@ from sklearn.metrics import auc
 from sklearn.metrics import roc_curve
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 import seaborn as sns
+import pandas as pd
+from matplotlib.collections import EllipseCollection
+from matplotlib.colors import Normalize
 
 
 def plt_learning_curve(train_sizes, train_scores, test_scores, scoring, ylims = None, figsize=(8, 6)):
@@ -30,4 +33,40 @@ def plt_learning_curve(train_sizes, train_scores, test_scores, scoring, ylims = 
     else:
         plt.ylim([minmin-(minmin*0.009), maxmax+(maxmax*0.009)])
     plt.show()   
+
+from matplotlib.collections import EllipseCollection
+from matplotlib.colors import Normalize
+
+def plot_corr_ellipses(data, figsize=None, **kwargs):
+    ''' https://stackoverflow.com/a/34558488 '''
+    M = np.array(data)
+    if not M.ndim == 2:
+        raise ValueError('data must be a 2D array')
+    fig, ax = plt.subplots(1, 1, figsize=figsize, subplot_kw={'aspect':'equal'})
+    ax.set_xlim(-0.5, M.shape[1] - 0.5)
+    ax.set_ylim(-0.5, M.shape[0] - 0.5)
+    ax.invert_yaxis()
+
+    # xy locations of each ellipse center
+    xy = np.indices(M.shape)[::-1].reshape(2, -1).T
+
+    # set the relative sizes of the major/minor axes according to the strength of
+    # the positive/negative correlation
+    w = np.ones_like(M).ravel() + 0.01
+    h = 1 - np.abs(M).ravel() - 0.01
+    a = 45 * np.sign(M).ravel()
+
+    ec = EllipseCollection(widths=w, heights=h, angles=a, units='x', offsets=xy,
+                           norm=Normalize(vmin=-1, vmax=1),
+                           transOffset=ax.transData, array=M.ravel(), **kwargs)
+    ax.add_collection(ec)
+
+    # if data is a DataFrame, use the row/column names as tick labels
+    if isinstance(data, pd.DataFrame):
+        ax.set_xticks(np.arange(M.shape[1]))
+        ax.set_xticklabels(data.columns, rotation=90)
+        ax.set_yticks(np.arange(M.shape[0]))
+        ax.set_yticklabels(data.index)
+
+    return ec, ax
 
