@@ -7,7 +7,38 @@ import seaborn as sns
 import pandas as pd
 from matplotlib.collections import EllipseCollection
 from matplotlib.colors import Normalize
+from matplotlib.collections import EllipseCollection
+from matplotlib.colors import Normalize
 
+
+def plt_validation_curve(hiperparams, train_scores, valid_scores, scoring='accuracy', ylims = None, figsize=(8, 6)):
+    train_mean = np.mean(train_scores, axis=1)
+    train_std = np.std(train_scores, axis=1)
+    valid_mean = np.mean(valid_scores, 1)
+    valid_std = np.std(valid_scores, 1)
+    
+    maxmax = max(np.max(valid_mean), np.max(train_mean))
+    minmin = min(np.min(valid_mean), np.min(train_mean))
+    plt.figure(figsize=figsize)
+    plt.plot(hiperparams, train_mean, color='blue', marker='o', markersize=5, label='Training accuracy')
+    plt.fill_between(hiperparams, train_mean + train_std, train_mean - train_std, alpha=0.15, color='blue')
+    plt.plot(hiperparams, valid_mean, color='green', linestyle='--', marker='s', markersize=5,label='Validation accuracy')
+    plt.fill_between(hiperparams,valid_mean + valid_std, valid_mean - valid_std, alpha=0.15, color='blue')
+
+    plt.grid()
+    plt.legend(loc='best')
+    plt.xlim(min(hiperparams), max(hiperparams))
+    plt.xlabel('Param')
+    plt.ylabel('score')
+    plt.legend(loc='upper right')
+    plt.title("Scoring {}, value: {:.2}, param:{}".format(scoring, np.mean(valid_scores, 1).max(), hiperparams[np.mean(valid_scores, 1).argmax()]))
+    #Atencion, es el maximo de todos los scores, no es representativo del score real
+
+    if ylims is not None:
+        plt.ylim(ylims)
+    else:
+        plt.ylim([minmin-(minmin*0.009), maxmax+(maxmax*0.009)])
+    plt.show() 
 
 def plt_learning_curve(train_sizes, train_scores, test_scores, scoring, ylims = None, figsize=(8, 6)):
     train_mean = np.mean(train_scores, axis=1)
@@ -34,8 +65,7 @@ def plt_learning_curve(train_sizes, train_scores, test_scores, scoring, ylims = 
         plt.ylim([minmin-(minmin*0.009), maxmax+(maxmax*0.009)])
     plt.show()   
 
-from matplotlib.collections import EllipseCollection
-from matplotlib.colors import Normalize
+
 
 def plot_corr_ellipses(data, figsize=None, **kwargs):
     ''' https://stackoverflow.com/a/34558488 '''
