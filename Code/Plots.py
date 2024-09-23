@@ -9,7 +9,7 @@ from matplotlib.collections import EllipseCollection
 from matplotlib.colors import Normalize
 from matplotlib.collections import EllipseCollection
 from matplotlib.colors import Normalize
-
+from sklearn.metrics import PrecisionRecallDisplay, RocCurveDisplay
 
 def plt_validation_curve(hiperparams, train_scores, valid_scores, scoring='accuracy', ylims = None, figsize=(8, 6)):
     train_mean = np.mean(train_scores, axis=1)
@@ -99,4 +99,43 @@ def plot_corr_ellipses(data, figsize=None, **kwargs):
         ax.set_yticklabels(data.index)
 
     return ec, ax
+
+
+def plt_roc_threshold(vainilla_model, tuned_model, X_test, y_test, scorings, pos_label=1):
+    decision_threshold = getattr(tuned_model, "best_threshold_", 0.5)
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 10))
+    
+    RocCurveDisplay.from_estimator(
+        vainilla_model,
+        X_test,
+        y_test,
+        pos_label=pos_label,
+        #linestyle=linestyle,
+        #color=color,
+        ax=ax,
+        #name=name,
+        plot_chance_level=True,
+    )
+
+    ax.plot(
+        scorings["fpr_score"](vainilla_model, X_test, y_test),
+        scorings["tpr_score"](vainilla_model, X_test, y_test),
+        marker="o",
+        markersize=10,
+        color="tab:blue",
+        label="Default cut-off point at a probability of {:.2f}".format(0.5),
+    )
+
+    ax.plot(
+        scorings["fpr_score"](tuned_model, X_test, y_test),
+        scorings["tpr_score"](tuned_model, X_test, y_test),
+        marker="o",
+        markersize=10,
+        color="tab:red",
+        label="Default cut-off point at a probability of {:.2f}".format(decision_threshold),
+    )
+
+    ax.legend()
+    plt.title("ROC")
+    plt.show()
 
