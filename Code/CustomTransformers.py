@@ -89,17 +89,19 @@ class ColumnSelector(BaseEstimator, TransformerMixin):
         return Xc[self.columns]
 
 class CollinearityDropper(BaseEstimator, TransformerMixin):
-    def __init__(self, columns=None, min_coef=0.99):
+    def __init__(self, columns=None, min_coef=0.99, method="pearson"):
         super().__init__()
         self.columns =  columns
         self.min_coef = min_coef  
-        self.columns_to_drop = []    
+        self.columns_to_drop = [] 
+        self.method = method   
     
     def fit(self, X, y=None):
         if self.columns is None:
             self.columns = X.select_dtypes(include=['number']).columns
         
-        correlation_matrix = X[self.columns].corr()
+        #method{‘pearson’, ‘kendall’, ‘spearman’} 
+        correlation_matrix = X[self.columns].corr(method=self.method)
         fc = correlation_matrix.shape[1]
         for i in range(fc):
             for j in range(i+1, fc):
