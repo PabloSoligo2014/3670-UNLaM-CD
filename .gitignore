@@ -1,3 +1,4 @@
 *.pyc
 datasets/loan_data.csv.gz
 /09_NoShared
+90_TP/01_TP2024_C2/creditos_banco_evaluacion.csv
