@@ -8,8 +8,7 @@ import matplotlib.pyplot as plt
 
 
 class DataWindow():
-    def __init__(self, input_width, label_width, shift, 
-                 train_df=train_df, val_df=val_df, test_df=test_df, 
+    def __init__(self, input_width, label_width, shift, train_df=None, val_df=None, test_df=None, 
                  label_columns=None):
         
         self.train_df = train_df
