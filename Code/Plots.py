@@ -7,9 +7,11 @@ import seaborn as sns
 import pandas as pd
 from matplotlib.collections import EllipseCollection
 from matplotlib.colors import Normalize
-from matplotlib.collections import EllipseCollection
 from matplotlib.colors import Normalize
 from sklearn.metrics import PrecisionRecallDisplay, RocCurveDisplay
+from sklearn.model_selection import learning_curve
+from sklearn.model_selection import StratifiedKFold
+
 
 def plt_validation_curve(hiperparams, train_scores, valid_scores, scoring='accuracy', ylims = None, figsize=(8, 6)):
     train_mean = np.mean(train_scores, axis=1)
@@ -65,6 +67,37 @@ def plt_learning_curve(train_sizes, train_scores, test_scores, scoring, ylims = 
         plt.ylim([minmin-(minmin*0.009), maxmax+(maxmax*0.009)])
     plt.show()   
 
+
+def plot_learning_curve(estimator, X, y, train_sizes=np.linspace(0.1, 1.0, 10), cv=StratifiedKFold(n_splits=5), scoring='accuracy', n_jobs=-1):
+    # Calcular las curvas de aprendizaje
+    train_sizes, train_scores, test_scores = learning_curve(
+        estimator, X, y,
+        train_sizes=train_sizes,
+        cv=cv,
+        scoring=scoring,
+        n_jobs=n_jobs
+    )
+
+    # Calcular media y desviación estándar
+    train_mean = np.mean(train_scores, axis=1)
+    train_std  = np.std(train_scores, axis=1)
+    test_mean  = np.mean(test_scores, axis=1)
+    test_std   = np.std(test_scores, axis=1)
+
+    # Graficar
+    plt.figure(figsize=(10, 6))
+    plt.plot(train_sizes, train_mean, 'o-', label='Entrenamiento')
+    plt.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, alpha=0.1)
+
+    plt.plot(train_sizes, test_mean, 'o-', label='Validación cruzada')
+    plt.fill_between(train_sizes, test_mean - test_std, test_mean + test_std, alpha=0.1)
+
+    plt.xlabel('Tamaño del conjunto de entrenamiento')
+    plt.ylabel('Exactitud')
+    plt.title('Curvas de aprendizaje para k-NN')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
 
 def plot_corr_ellipses(data, figsize=None, **kwargs):
