@@ -62,6 +62,14 @@ class ColOutlierRemover(BaseEstimator, TransformerMixin):
                 #Xc = Xc[(Xc[c] > lower_limit) & (Xc[c] < upper_limit)]
                 
             elif self.strategy=="limit":
+
+                dtype = Xc[c].dtype
+                if np.issubdtype(dtype, np.integer):
+                    lower_limit = int(lower_limit)
+                    upper_limit = int(upper_limit)
+
+
+
                 Xc.loc[(Xc[c] < lower_limit), c] = lower_limit
                 Xc.loc[(Xc[c] > upper_limit), c] = upper_limit
             elif self.strategy=="mean":
