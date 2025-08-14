@@ -2,3 +2,6 @@
 datasets/loan_data.csv.gz
 /09_NoShared
 90_TP/01_TP2024_C2/creditos_banco_evaluacion.csv
+09_TimeSeries_UnderDevelopment/AR_Orders.ipynb
+09_TimeSeries_UnderDevelopment/image.png
+datasets/Daily_Demand_Forecasting_Orders.csv
