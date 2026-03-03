@@ -122,4 +122,4 @@ class CollinearityDropper(BaseEstimator, TransformerMixin):
         
     def transform(self, X, y=None):
         Xc = X.copy()
-        return Xc.drop(columns=self.columns_to_drop, axis=1)
+        return Xc.drop(columns=self.columns_to_drop)
