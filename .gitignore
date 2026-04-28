@@ -7,3 +7,4 @@ datasets/loan_data.csv.gz
 datasets/Daily_Demand_Forecasting_Orders.csv
 04_Models/05_RegresionLineal/11_IndirectRegresion.ipynb
 07_Productivity/ToolsTitanicResuelto.ipynb
+04_Models/01_KNN/_09_AUX_KNN_StudentsWFeatureSelectionGS.ipynb
