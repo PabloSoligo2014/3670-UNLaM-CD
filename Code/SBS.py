@@ -18,6 +18,11 @@ class SBS():
         self.test_size = test_size
         self.random_state = random_state
 
+    def get_subset_by_n_features(self, n_features):
+        for s in self.subsets_:
+            if len(s) == n_features:
+                return s
+
     def fit(self, X, y):
         #Observar que puede estar remuestreando la muestra de entrenamiento original
         X_train, X_test, y_train, y_test =             train_test_split(X, y, test_size=self.test_size,
