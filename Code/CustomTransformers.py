@@ -1,7 +1,7 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 import pandas as pd
 import numpy as np
-
+from sklearn.utils.validation import check_is_fitted
 
 class ColumnScaler(BaseEstimator, TransformerMixin):
     def __init__(self, scaler=None, columns=None):
@@ -96,30 +96,57 @@ class ColumnSelector(BaseEstimator, TransformerMixin):
         Xc = X.copy()
         return Xc[self.columns]
 
+
+#TODO: Actualizado a versiones nuevas de sklearn salida pandas 
 class CollinearityDropper(BaseEstimator, TransformerMixin):
-    def __init__(self, columns=None, min_coef=0.99, method="pearson"):
-        super().__init__()
-        self.columns =  columns
-        self.min_coef = min_coef  
-        self.columns_to_drop = [] 
-        self.method = method   
-    
+    """
+    Parámetros:
+    -----------
+    min_coef : float, default=0.8
+        Umbral absoluto de correlación (0 a 1). Se eliminan columnas con |r| >= min_coef.
+    method : str, default='pearson'
+        Método de correlación de pandas ('pearson', 'spearman', 'kendall').
+    """
+    def __init__(self, min_coef=0.8, method="pearson"):
+        self.min_coef = min_coef
+        self.method = method
+
     def fit(self, X, y=None):
-        if self.columns is None:
-            self.columns = X.select_dtypes(include=['number']).columns
+        if not isinstance(X, pd.DataFrame):
+            raise TypeError("CollinearityDropper requiere un DataFrame de Pandas como entrada.")
+
+        # Atributos estándar con guión bajo final para check_is_fitted
+        self.n_features_in_ = X.shape[1]
+        self.feature_names_in_ = list(X.columns)
+
+        # Cálculo de la matriz de correlación absoluta
+        corr_matrix = X.corr(method=self.method).abs()
+
+        # Matriz triangular superior para no evaluar pares duplicados
+        upper_tri = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
+
+        # Identificación de columnas redundantes
+        self.cols_to_drop_ = [
+            column for column in upper_tri.columns if any(upper_tri[column] >= self.min_coef)
+        ]
         
-        #method{‘pearson’, ‘kendall’, ‘spearman’} 
-        correlation_matrix = X[self.columns].corr(method=self.method)
-        fc = correlation_matrix.shape[1]
-        for i in range(fc):
-            for j in range(i+1, fc):
-                if abs(correlation_matrix.iloc[i, j]) > self.min_coef and correlation_matrix.columns[j] not in self.columns_to_drop:
-                    self.columns_to_drop.append(correlation_matrix.columns[j])
+        # Columnas conservadas
+        self.feature_names_out_ = [col for col in X.columns if col not in self.cols_to_drop_]
+
         return self
-    
+
+    def transform(self, X):
+        check_is_fitted(self, attributes=["cols_to_drop_"])
+
+        if isinstance(X, pd.DataFrame):
+            return X.drop(columns=self.cols_to_drop_)
+        else:
+            # Soporte en caso de que X llegue como ndarray de NumPy
+            indices_to_keep = [
+                i for i, col in enumerate(self.feature_names_in_) if col not in self.cols_to_drop_
+            ]
+            return X[:, indices_to_keep]
+
     def get_feature_names_out(self, input_features=None):
-        return self.columns.drop(columns=self.columns_to_drop, axis=1)
-        
-    def transform(self, X, y=None):
-        Xc = X.copy()
-        return Xc.drop(columns=self.columns_to_drop)
+        check_is_fitted(self, attributes=["feature_names_out_"])
+        return np.array(self.feature_names_out_, dtype=object)
