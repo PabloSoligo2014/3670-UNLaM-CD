@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-
+from sklearn.preprocessing import StandardScaler
 
 
 class BaseRollingForecast():
@@ -105,20 +105,18 @@ class SarimaxRollingForecast(BaseRollingForecast):
             self.target_col = None
             
          
-    def predict(self, X, target_col=None):
-
+    def predict(self, X):
+        self.scaler_ = StandardScaler()
         pred_ARMA = []
 
         if isinstance(X, pd.DataFrame):
-            if target_col is None:
-                target_col = self.target_col
-            if target_col is None:
+            if self.target_col is None:
                 raise ValueError("target_col is required when X is a DataFrame.")
-            if target_col not in X.columns:
-                raise ValueError(f"Target column {target_col!r} is not present in X.")
+            if self.target_col not in X.columns:
+                raise ValueError(f"Target column {self.target_col!r} is not present in X.")
 
-            y = X[target_col]
-            exog = X.drop(columns=[target_col])
+            y = X[self.target_col]
+            exog = X.drop(columns=[self.target_col])
             if exog.empty:
                 exog = None
         else:
@@ -127,24 +125,32 @@ class SarimaxRollingForecast(BaseRollingForecast):
 
         for i in range(self.train_len, len(y), self.window):
             steps = min(self.window, len(y) - i)
+
             train_exog = exog.iloc[:i] if exog is not None else None
             forecast_exog = exog.iloc[i:i + steps] if exog is not None else None
+            
 
+            if exog is not None:
+                #Sin fugas ;)
+                self.scaler_.fit(train_exog)
+                train_exog      =   self.scaler_.transform(train_exog)
+                forecast_exog   =   self.scaler_.transform(forecast_exog)
+            #TODO: paralelizar esto si se puede
             model = SARIMAX(
                 y.iloc[:i],
                 exog=train_exog,
                 order=self.order,
-                seasonal_order=self.seasonal_order,
+                seasonal_order=self.seasonal_order
             )
-            res = model.fit(disp=False)
-            oos_pred = res.get_forecast(
+            self.res_ = model.fit(disp=False)
+            oos_pred = self.res_.get_forecast(
                 steps=steps,
                 exog=forecast_exog,
             ).predicted_mean
             pred_ARMA.extend(oos_pred)
 
         #aic del ultimo modelo o la media de los aic
-        self.aic_   = res.aic
+        self.aic_   = self.res_.aic
                     
         index = y.index[self.train_len:self.total_len]
         self._sresult = pd.Series(pred_ARMA, index=index)
