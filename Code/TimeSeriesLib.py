@@ -3,6 +3,8 @@ import pandas as pd
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
+
+
 class BaseRollingForecast():
     def __init__(self, **kwargs):
         self.window         = kwargs["window"]
@@ -18,7 +20,7 @@ class BaseRollingForecast():
 
     def _calc_score(self, y, y_pred):
         return mean_squared_error(y, y_pred)    
-    
+
     def score(self):
         return self.score_
         
@@ -33,6 +35,11 @@ class MeanRollingForecast(BaseRollingForecast):
             self.mean_steps = kwargs["mean_steps"]
 
     def predict(self, X):
+        if isinstance(X, pd.DataFrame):
+            if X.shape[1] == 0:
+                raise ValueError("X must contain at least one column.")
+            X = X.iloc[:, 0]
+
         pred_mean = []
         for i in range(self.train_len, self.total_len, self.window):
             steps = min(self.window, self.total_len - i)
@@ -48,13 +55,20 @@ class MeanRollingForecast(BaseRollingForecast):
         index = X.index[self.train_len:self.total_len]
             
         self._sresult = pd.Series(pred_mean, index=index)
-        self.score_ = self._calc_score(X.iloc[self.train_len:self.total_len], self._sresult)
+        actual = X.iloc[self.train_len:self.total_len]
+        self.resid_ = actual - self._sresult
+        self.score_ = self._calc_score(actual, self._sresult)
         return self._sresult
     
 
 class LastRollingForecast(BaseRollingForecast):
 
     def predict(self, X):
+        if isinstance(X, pd.DataFrame):
+            if X.shape[1] == 0:
+                raise ValueError("X must contain at least one column.")
+            X = X.iloc[:, 0]
+
         pred_last_value = []
         for i in range(self.train_len, self.total_len, self.window):
             steps = min(self.window, self.total_len - i)
@@ -63,42 +77,79 @@ class LastRollingForecast(BaseRollingForecast):
         index = X.index[self.train_len:self.total_len]
 
         self._sresult = pd.Series(pred_last_value, index=index)
-        self.score_ = self._calc_score(X.iloc[self.train_len:self.total_len], self._sresult)
+        actual = X.iloc[self.train_len:self.total_len]
+        self.resid_ = actual - self._sresult
+        self.score_ = self._calc_score(actual, self._sresult)
         return self._sresult
 
 
 class SarimaxRollingForecast(BaseRollingForecast):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        if "p" in kwargs:
-            self.p = kwargs["p"]
-        else:
-            self.p = 1
 
-        if "d" in kwargs:
-            self.d = kwargs["d"]
-        else:
-            self.d = 0
 
-        if "q" in kwargs:
-            self.q = kwargs["q"]
+        if "order" in kwargs:
+            self.order = kwargs["order"]
         else:
-            self.q = 1
-     
+            self.order = (1,0,0)
 
+        if "seasonal_order" in kwargs:
+            self.seasonal_order = kwargs["seasonal_order"]
+        else:
+            self.seasonal_order = (0, 0, 0, 0)
+
+
+        if "target_col" in kwargs:
+            self.target_col = kwargs["target_col"]
+        else:
+            self.target_col = None
+            
          
-    def predict(self, X):
+    def predict(self, X, target_col=None):
 
         pred_ARMA = []
-        
-        for i in range(self.train_len, self.total_len, self.window):
-            steps = min(self.window, self.total_len - i)
-            model = SARIMAX(X[:i], order=(self.p,self.d,self.q))
+
+        if isinstance(X, pd.DataFrame):
+            if target_col is None:
+                target_col = self.target_col
+            if target_col is None:
+                raise ValueError("target_col is required when X is a DataFrame.")
+            if target_col not in X.columns:
+                raise ValueError(f"Target column {target_col!r} is not present in X.")
+
+            y = X[target_col]
+            exog = X.drop(columns=[target_col])
+            if exog.empty:
+                exog = None
+        else:
+            y = X
+            exog = None
+
+        for i in range(self.train_len, len(y), self.window):
+            steps = min(self.window, len(y) - i)
+            train_exog = exog.iloc[:i] if exog is not None else None
+            forecast_exog = exog.iloc[i:i + steps] if exog is not None else None
+
+            model = SARIMAX(
+                y.iloc[:i],
+                exog=train_exog,
+                order=self.order,
+                seasonal_order=self.seasonal_order,
+            )
             res = model.fit(disp=False)
-            oos_pred = res.get_forecast(steps=steps).predicted_mean
+            oos_pred = res.get_forecast(
+                steps=steps,
+                exog=forecast_exog,
+            ).predicted_mean
             pred_ARMA.extend(oos_pred)
-        index = X.index[self.train_len:self.total_len]
+
+        #aic del ultimo modelo o la media de los aic
+        self.aic_   = res.aic
+                    
+        index = y.index[self.train_len:self.total_len]
         self._sresult = pd.Series(pred_ARMA, index=index)
-        self.score_ = self._calc_score(X.iloc[self.train_len:self.total_len], self._sresult)
+        actual = y.iloc[self.train_len:self.total_len]
+        self.resid_ = actual - self._sresult
+        self.score_ = self._calc_score(actual, self._sresult)
         return self._sresult
   

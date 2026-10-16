@@ -153,15 +153,15 @@ def get_byRegion_historical(start_date: datetime, end_date: datetime, region: in
 if __name__ == "__main__":
 
     start_date      = datetime.strptime("2025-10-14", "%Y-%m-%d")
-    end_date        = datetime.strptime("2026-10-14", "%Y-%m-%d")
+    end_date        = datetime.strptime("2026-10-15", "%Y-%m-%d")
 
-    #df_holidays     = get_holidays(start_date, end_date)
-    #df_holidays.to_csv("cammesa_holidays.csv", index=False)
+    df_holidays     = get_holidays(start_date, end_date)
+    df_holidays.to_csv("cammesa_holidays.csv", index=False)
         
 
     df_historical   = get_byRegion_historical(start_date, end_date, region=1002)
     df_historical.to_csv("cammesa_historical.csv", index=False)
 
-    #df_business = get_businessday(start_date, end_date)  
-    #df_business.to_csv("cammesa_businessday.csv", index=False) 
+    df_business = get_businessday(start_date, end_date)  
+    df_business.to_csv("cammesa_businessday.csv", index=False) 
     
