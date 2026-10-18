@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from statsmodels.tsa.statespace.sarimax import SARIMAX
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.preprocessing import StandardScaler
 
 
@@ -11,9 +11,14 @@ class BaseRollingForecast:
     def __init__(self, **kwargs):
         self.window = kwargs["window"]
         self.train_percent = kwargs["train_percent"]
+        
+        if "score_fun" in kwargs:
+            self.score_fun =  kwargs["score_fun"]     
+        else:
+            self.score_fun = mean_squared_error
 
     def _calc_score(self, y, y_pred):
-        return mean_squared_error(y, y_pred)
+        return self.score_fun(y, y_pred)
 
     def score(self):
         return self.score_
