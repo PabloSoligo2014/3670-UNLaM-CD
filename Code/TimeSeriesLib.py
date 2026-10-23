@@ -248,12 +248,13 @@ class SarimaxRollingForecast(BaseRollingForecast):
                 train_exog = self._scaled_exog_frame(scaler, train_exog)
                 forecast_exog = self._scaled_exog_frame(scaler, forecast_exog)
 
-            result = SARIMAX(
+            self.model_ = SARIMAX(
                 y.iloc[:i],
                 exog=train_exog,
                 order=self.order,
                 seasonal_order=self.seasonal_order,
-            ).fit(disp=False)
+            )
+            result = self.model_.fit(disp=False)
             fold_aic.append(result.aic)
             forecast = result.get_forecast(steps=steps, exog=forecast_exog).predicted_mean
             predictions.extend(forecast.tolist())
