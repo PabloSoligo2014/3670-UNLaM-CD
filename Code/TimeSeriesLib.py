@@ -193,12 +193,16 @@ class SarimaxRollingForecast(BaseRollingForecast):
             self.scaler_ = None
             scaled_exog = None
 
+        
         result = SARIMAX(
             y,
             exog=scaled_exog,
             order=self.order,
             seasonal_order=self.seasonal_order,
         ).fit(disp=False)
+
+        #TODO los residuos deben estar agrupados segun window, la mezcla produce correlacion espurea
+        #TODO meter diccionario para agrupar por windows
         self.res_ = result
         self.y_ = y.copy()
         self.exog_columns_ = list(exog.columns) if exog is not None else None
@@ -248,6 +252,8 @@ class SarimaxRollingForecast(BaseRollingForecast):
                 train_exog = self._scaled_exog_frame(scaler, train_exog)
                 forecast_exog = self._scaled_exog_frame(scaler, forecast_exog)
 
+            #TODO los residuos deben estar agrupados segun window, la mezcla produce correlacion espurea
+            #TODO meter diccionario para agrupar por windows
             self.model_ = SARIMAX(
                 y.iloc[:i],
                 exog=train_exog,
